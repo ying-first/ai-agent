@@ -15,7 +15,8 @@ try:  # 该脚本只能在 Blender 内置解释器中真正执行；普通 Pytho
 except ImportError:  # pragma: no cover - 非 Blender 环境
     bpy = None
 
-OUT_PATH = r"D:\AI_Agent\test_cube.blend"
+OUT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "test_cube.blend")
 
 
 def create_red_cube() -> str:

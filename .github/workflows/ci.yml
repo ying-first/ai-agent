@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      PYTHONIOENCODING: utf-8
+      AI_AGENT_DISABLE_EMBEDDINGS: "1"
+      AI_AGENT_NO_BG: "1"
+      AI_AGENT_EXPERIENCE_ROOT: ${{ runner.temp }}/ci-experiences
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install ruff
+
+      - name: Compile
+        run: python -m compileall -q .
+
+      - name: Validate JSON
+        run: |
+          python -m json.tool config.json | Out-Null
+          python -m json.tool evals/tasks.json | Out-Null
+
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Import and plugin smoke
+        run: |
+          python -c "import agent, safety; names={s['function']['name'] for s in safety.get_tool_schemas()}; assert 'experience_recall' in names; assert 'manage_experience' in names; print('tools', len(names))"

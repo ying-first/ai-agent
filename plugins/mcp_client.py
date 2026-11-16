@@ -14,7 +14,7 @@ config.json 示例：
     "servers": {
       "filesystem": {
         "command": "npx",
-        "args": ["-y", "@modelcontextprotocol/server-filesystem", "D:\\\\AI_Agent"],
+        "args": ["-y", "@modelcontextprotocol/server-filesystem", "."],
         "tier": "read",
         "enabled": true
       }

@@ -104,7 +104,8 @@ def main():
 
 def _run():
     import os
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sys.path.insert(0, root)
     from safety import trim_history
 
     cases, base = build_cases()

@@ -1,0 +1,18 @@
+# Optional capabilities. Install only what you need.
+tiktoken>=0.7
+fastembed>=0.3
+tree-sitter>=0.23
+tree-sitter-python
+tree-sitter-javascript
+tree-sitter-typescript
+tree-sitter-c-sharp
+tree-sitter-go
+tree-sitter-rust
+tree-sitter-java
+tree-sitter-c
+tree-sitter-cpp
+duckduckgo-search>=8.1
+ruff>=0.6
+
+# Windows search accelerator used by grep_code
+ripgrep-bin>=15; sys_platform == "win32"
