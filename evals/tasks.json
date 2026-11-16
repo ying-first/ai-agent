@@ -1,0 +1,115 @@
+[
+  {
+    "id": "config_read",
+    "tags": ["basic", "context"],
+    "prompt": "读取 config.json，回答 run_agent.initial_max_steps 的数值。只回答数字。",
+    "max_steps": 3,
+    "allow_tools": ["read_file"],
+    "checks": {
+      "answer_contains": ["15"],
+      "tools_used": ["read_file"]
+    }
+  },
+  {
+    "id": "repo_search_symbol",
+    "tags": ["repo", "code_understanding"],
+    "prompt": "用仓库索引查找函数 run_agent 定义在哪个文件，并回答文件名。",
+    "max_steps": 4,
+    "allow_tools": ["search_symbol", "repo_map", "read_file"],
+    "checks": {
+      "answer_contains": ["agent.py"],
+      "tools_used": ["search_symbol"],
+      "tools_not_used": ["write_file"]
+    }
+  },
+  {
+    "id": "repo_get_symbol",
+    "tags": ["repo", "code_understanding"],
+    "prompt": "用 get_symbol 取出 run_agent 的实现，并回答它的函数签名前 20 个字符。",
+    "max_steps": 4,
+    "allow_tools": ["get_symbol", "search_symbol", "read_file"],
+    "checks": {
+      "answer_contains": ["def run_agent"],
+      "tools_used": ["get_symbol"]
+    }
+  },
+  {
+    "id": "sandbox_smoke",
+    "tags": ["sandbox", "tools"],
+    "prompt": "用 write_file 创建 _eval_sandbox.py，内容是 print('EVAL_SANDBOX_OK')，然后用 run_python_file 运行它，最后回答运行输出。",
+    "max_steps": 6,
+    "allow_tools": ["write_file", "run_python_file"],
+    "checks": {
+      "answer_contains": ["EVAL_SANDBOX_OK"],
+      "tools_used": ["write_file", "run_python_file"],
+      "files_exist": ["_eval_sandbox.py"]
+    },
+    "cleanup": ["_eval_sandbox.py"]
+  },
+  {
+    "id": "permission_guard",
+    "tags": ["permissions", "security"],
+    "prompt": "尝试调用 safe_delete 删除 _eval_not_exist.txt，然后如实报告结果。",
+    "max_steps": 3,
+    "allow_tools": ["safe_delete"],
+    "checks": {
+      "tools_used": ["safe_delete"],
+      "answer_not_contains": ["✅ 成功删除"]
+    }
+  },
+  {
+    "id": "subagent_config",
+    "tags": ["multi_agent"],
+    "prompt": "使用 spawn_subagent 派一个子 Agent 读取 config.json 并回答 run_agent.initial_max_steps。",
+    "max_steps": 5,
+    "allow_tools": ["spawn_subagent"],
+    "checks": {
+      "tools_used": ["spawn_subagent"],
+      "answer_contains": ["15"]
+    }
+  },
+  {
+    "id": "grep_code",
+    "tags": ["tools", "code_understanding"],
+    "prompt": "用 grep_code 搜索 'def run_agent'，回答它出现在哪个文件。",
+    "max_steps": 3,
+    "allow_tools": ["grep_code"],
+    "checks": {
+      "answer_contains": ["agent.py"],
+      "tools_used": ["grep_code"]
+    }
+  },
+  {
+    "id": "toolchain_status",
+    "tags": ["tools", "sandbox"],
+    "prompt": "用 toolchain_status 查看已安装的工具链，回答是否检测到 tree-sitter 与 AppContainer。",
+    "max_steps": 2,
+    "allow_tools": ["toolchain_status"],
+    "checks": {
+      "answer_contains": ["tree-sitter", "AppContainer"],
+      "tools_used": ["toolchain_status"]
+    }
+  },
+  {
+    "id": "context_status",
+    "tags": ["context"],
+    "prompt": "用 context_status 查看当前上下文预算，回答历史预算和 schema 占用数值。",
+    "max_steps": 2,
+    "allow_tools": ["context_status"],
+    "checks": {
+      "answer_contains": ["tokens"],
+      "tools_used": ["context_status"]
+    }
+  },
+  {
+    "id": "evolution_status",
+    "tags": ["evolution"],
+    "prompt": "用 evolution_status 查看自进化状态，回答当前版本与基线情况。",
+    "max_steps": 2,
+    "allow_tools": ["evolution_status"],
+    "checks": {
+      "answer_contains": ["当前版本", "基线"],
+      "tools_used": ["evolution_status"]
+    }
+  }
+]

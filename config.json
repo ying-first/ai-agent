@@ -1,0 +1,245 @@
+{
+  "run_agent": {
+    "initial_max_steps": 15,
+    "max_steps_add": 10,
+    "consecutive_errors_limit": 3,
+    "loop_detect_window": 15,
+    "history_max_chars": 6000,
+    "history_trim_per_step": true,
+    "history_step_budget_chars": 8000,
+    "tool_result_max_chars": 1500,
+    "write_tools": ["write_file", "safe_delete", "install_package"]
+  },
+  "router": {
+    "top_k": 3,
+    "router_force": ["list_tools", "run_python_file"],
+    "always_on_extras": ["read_core_file"],
+    "cache_size": 32,
+    "session_max": 26
+  },
+  "review": {
+    "_comment_mode": "off=关闭 LLM 审核（仅本地 AST/危险调用检查）；sampled=抽样审核（默认，仅对新增 @tool 类改动按 sample_rate 抽样，其余必审）；strict=全量审核（每次写入都走 LLM 审核，最慢最保守）",
+    "_comment_sample_rate": "仅在 mode=sampled 时生效，范围 0.0~1.0；只影响『无 import 变化 + 有 @tool/def 定义』这类改动；0.0=新增 @tool 全放行，0.2=20% 抽样，1.0=等效 strict",
+    "_comment_priority": "环境变量 REVIEW_MODE 优先于这里的 mode；reviewer 异常或连续失败降级期内均拒绝写入（fail-closed）",
+    "mode": "sampled",
+    "sample_rate": 0.2
+  },
+  "trim": {
+    "summary_deterministic_first": true,
+    "summary_keep_recent_chars": 8000,
+    "summary_max_input": 12000,
+    "summary_fail_backoff_max_s": 300
+  },
+  "backup": {
+    "max_count": 10,
+    "max_total_mb": 50
+  },
+  "file_cache": {
+    "max_total_mb": 20,
+    "max_single_mb": 2,
+    "preview_chars": 800,
+    "full_return_chars": 5000
+  },
+  "spawn": {
+    "thread_pool_size": 4
+  },
+  "plugins": {
+    "max_count": 50,
+    "max_single_mb": 5
+  },
+  "experience": {
+    "_comment_phaseA": "SQLite+FTS5 分层记忆：episode 原始记录 → experience 指纹合并 → pattern 聚类 → playbook/principle 审批。旧 JSON 首次启动自动迁移。",
+    "_comment_auto_save": "true=任务结束自动记录 episode（热路径不调用 LLM，后台巩固）；false=关闭自动保存（手动 manage_experience(save) 仍可用）",
+    "_comment_auto_recall": "true=每轮任务开始自动检索并注入紧凑经验卡片；recall_token_budget 控制注入上限",
+    "_comment_embedding": "embedding_backend=fastembed/auto/hash；fastembed 不可用时自动回退轻量哈希向量",
+    "_comment_consolidate": "每累计 consolidate_after 条未巩固经验，后台压缩/聚类/抽象一次；playbook/principle 需 approve",
+    "_comment_direct": "direct_enabled=true 时，高置信已批准 playbook 或成功证据充分的 experience 会走经验直行，跳过大模型规划；失败会降权/转 suspect/candidate",
+    "db": "experience.db",
+    "auto_save": true,
+    "auto_recall": true,
+    "auto_recall_min_chars": 8,
+    "recall_top_k": 3,
+    "recall_min_score": 0.0,
+    "recall_token_budget": 700,
+    "candidate_scan_limit": 50,
+    "vector_candidates": 50,
+    "max_entries": 500,
+    "compress_timeout": 20,
+    "embedding_backend": "fastembed",
+    "embedding_model": "BAAI/bge-small-zh-v1.5",
+    "embedding_cache_dir": "~/.ai_agent_models",
+    "hf_endpoint": "https://hf-mirror.com",
+    "vector_dim": 512,
+    "cluster_threshold": 0.82,
+    "similarity_threshold": 0.9,
+    "min_evidence_for_pattern": 3,
+    "min_evidence_for_principle": 5,
+    "consolidate_after": 10,
+    "consolidate_on_save": true,
+    "consolidate_limit": 5,
+    "auto_feedback": true,
+    "route_top_k": 5,
+    "direct_enabled": true,
+    "direct_min_confidence": 0.75,
+    "direct_min_evidence": 3,
+    "direct_min_success_rate": 0.7,
+    "direct_min_score": 0.1,
+    "direct_exp_min_score": 0.03,
+    "suspect_utility": 0.35,
+    "ab_test": {
+      "_comment": "确定性分桶：treatment=自动召回，control=不召回；同一任务描述固定同臂。默认关闭，开启后用 manage_experience(action='metrics') 比较成功率/步数/延迟。",
+      "enabled": false,
+      "salt": "experience-v1",
+      "treatment_ratio": 0.5,
+      "min_samples": 10
+    }
+  },
+  "sandbox": {
+    "_comment": "Windows 用 Job Object（内存/CPU/进程数/KILL_ON_JOB_CLOSE）；本地后端不隔离文件系统与网络，network=deny 仅污染代理变量并在结果中标记未强制。",
+    "enabled": true,
+    "backend": "auto",
+    "timeout_s": 120,
+    "python_timeout_s": 15,
+    "memory_mb": 4096,
+    "cpu_time_s": 300,
+    "max_processes": 128,
+    "python_memory_mb": 1536,
+    "python_max_processes": 32,
+    "network": "allow",
+    "clip_output_chars": 20000,
+    "create_no_window": true,
+    "appcontainer": true,
+    "appcontainer_profile": "AIAgentSandbox",
+    "appcontainer_required": true,
+    "env_passthrough": [],
+    "env": {}
+  },
+  "permissions": {
+    "_comment_tiers": "read/write/delete/execute/network 五级；auto_allow 内的级别直接放行，其余需人类审批；self_gated_tools 内部已有审批，不重复弹窗。",
+    "_comment_scope": "remember_scope 控制会话内记住审批的粒度：tool/path/signature。",
+    "enabled": true,
+    "default_tier": "write",
+    "auto_allow": ["read", "write"],
+    "deny": [],
+    "remember_session": true,
+    "remember_scope": {
+      "network": "tool",
+      "execute": "signature",
+      "write": "path",
+      "delete": "path"
+    },
+    "tool_tiers": {},
+    "self_gated_tools": ["safe_delete", "execute_system_command", "run_external_app"]
+  },
+  "planner": {
+    "_comment": "复杂任务（长度 >= min_chars 或命中关键词）先让 LLM 生成 DAG 计划，失败则直接执行。",
+    "enabled": true,
+    "min_chars": 160,
+    "max_plan_steps": 8,
+    "timeout_s": 30,
+    "trigger_keywords": ["然后", "并且", "同时", "先", "再", "步骤", "计划", "分别", "1.", "2.", "3."]
+  },
+  "orchestrator": {
+    "_comment": "parallel_execute 的 DAG 调度：只读步骤并行，写/执行串行。",
+    "enabled": true,
+    "max_steps": 20,
+    "max_result_chars": 2000,
+    "max_total_chars": 9000
+  },
+  "repo_index": {
+    "_comment": "仓库符号索引，落盘 .agent_index/index.json；Python 用 AST，其它语言用正则。",
+    "enabled": true,
+    "max_files": 5000,
+    "max_file_kb": 1024,
+    "exclude_dirs": [".git", "__pycache__", ".agent_index", ".venv", "venv", "node_modules", "dist", "build", "obj", "bin", ".experiences", ".traces"],
+    "auto_index": true
+  },
+  "mcp": {
+    "_comment": "servers[name] = {command, args, env, cwd, tier, enabled, allowed_tools, deny_path_parts, protocol_version}。当前按 P3 显式关闭；filesystem server 已配置为只读白名单，需要时把 enabled 改为 true。",
+    "_comment_filesystem": "只允许 10 个只读工具；deny_path_parts 阻止通过 MCP 读取 .env/.git/.experiences 等敏感路径。",
+    "enabled": false,
+    "servers": {
+      "filesystem": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-filesystem", "D:\\AI_Agent"],
+        "tier": "read",
+        "enabled": true,
+        "allowed_tools": ["read_file", "read_text_file", "read_media_file", "read_multiple_files", "list_directory", "list_directory_with_sizes", "directory_tree", "search_files", "get_file_info", "list_allowed_directories"],
+        "deny_path_parts": [".env", ".git", "__pycache__", ".experiences", ".traces", ".agent_index", ".agent_checkpoints", ".evolution", ".sessions"]
+      }
+    },
+    "startup_timeout_s": 20,
+    "call_timeout_s": 60,
+    "protocol_version": "2025-06-18"
+  },
+  "context": {
+    "_comment": "token 预算：CJK 约 0.7 token/字，其余约 1 token/3.8 字符；严重超限才触发 LLM 摘要。",
+    "enabled": true,
+    "max_tokens": 24000,
+    "keep_recent_tokens": 5000,
+    "meta_reserve_tokens": 400,
+    "tool_result_max_tokens": 1200,
+    "summary_chars_per_token": 2.0,
+    "use_tiktoken": true,
+    "count_tool_schemas": true,
+    "min_history_tokens": 2000,
+    "output_reserve_tokens": 2000
+  },
+  "checkpoints": {
+    "_comment": "每步保存 chat_history + 写文件日志；rollback_checkpoint 可恢复上下文与文件。",
+    "enabled": true,
+    "dir": ".agent_checkpoints",
+    "max_per_session": 40,
+    "max_history_chars": 200000,
+    "max_files_per_session": 200
+  },
+  "subagents": {
+    "_comment": "子 Agent 强制只读（写/执行工具即使配置也会被过滤）；max_depth 控制任务树层数。",
+    "enabled": true,
+    "max_depth": 2,
+    "default_max_steps": 8,
+    "max_parallel": 4,
+    "read_only_tools": ["read_file", "read_core_file", "list_tools", "repo_map", "search_symbol", "find_callers", "get_symbol", "find_references", "impact_analysis", "diagnostics", "mcp_status", "grep_code", "git_query", "toolchain_status", "experience_recall", "context_status"]
+  },
+  "evals": {
+    "_comment": "评测任务在 evals/tasks.json；首轮可用 run_evals(update_baseline=true) 建立基线。",
+    "enabled": true,
+    "default_max_steps": 6
+  },
+  "evolution": {
+    "_comment": "自进化 Phase 1：候选目录 .evolution/candidates/<id>；冻结文件不可改；评分通过后仍需人类批准晋升。home 为空时使用 ~/.ai_agent_evolution（隐藏任务集存放处）。",
+    "enabled": true,
+    "home": "",
+    "frozen_files": ["safety.py", "sandbox.py", "permissions.py", "checkpoints.py", "eval_harness.py", "run_evals.py", "evolution.py", "experience_store.py", "plugins/experience.py", "plugins/evolution_tools.py", "evals/tasks.json", "config.json"],
+    "min_score": 80,
+    "min_pass_rate": 0.8,
+    "min_success_improvement": 0.0,
+    "max_changed_files": 20,
+    "max_changed_lines": 2000,
+    "eval_timeout_s": 900,
+    "require_baseline": true,
+    "fail_on_regression": true,
+    "require_appcontainer_security": true,
+    "allow_core_rewrite": false,
+    "containerize_eval": true,
+    "container_eval_fallback": true,
+    "eval_memory_mb": 2048,
+    "eval_max_processes": 64,
+    "canary": {
+      "enabled": true,
+      "limit": 3,
+      "tag": "",
+      "min_pass_rate": 0.66,
+      "auto_rollback": true
+    },
+    "weights": {
+      "success": 35,
+      "safety": 20,
+      "quality": 10,
+      "perf": 10,
+      "regression": 10,
+      "maintain": 10,
+      "cost": 5
+    }
+  }
+}
