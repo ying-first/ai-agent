@@ -15,7 +15,6 @@ jobs:
       PYTHONIOENCODING: utf-8
       AI_AGENT_DISABLE_EMBEDDINGS: "1"
       AI_AGENT_NO_BG: "1"
-      AI_AGENT_EXPERIENCE_ROOT: ${{ runner.temp }}/ci-experiences
 
     steps:
       - name: Checkout
@@ -48,5 +47,7 @@ jobs:
         run: ruff check .
 
       - name: Import and plugin smoke
+        env:
+          AI_AGENT_EXPERIENCE_ROOT: ${{ runner.temp }}/ci-experiences
         run: |
           python -c "import agent, safety; names={s['function']['name'] for s in safety.get_tool_schemas()}; assert 'experience_recall' in names; assert 'manage_experience' in names; print('tools', len(names))"
